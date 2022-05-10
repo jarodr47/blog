@@ -11,22 +11,28 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
+//connect to local mogogdb server
 mongoose.connect("mongodb://localhost:27017/dailyBlog", {useNewUrlParser: true});
 
+//create schema for boilerplate posts to be used on Home, About, and Contact routes.
 const postSchema = new mongoose.Schema ({
   title: String,
   post: String
 })
 
+//create a data model that will use the postSchema
 const Post = mongoose.model("Post", postSchema);
 
+//create schema for blogs to store individual blog posts.
 const blogsSchema = new mongoose.Schema ({
   title: String,
   post: String
 })
 
+//create a data model that will use the blogSchema
 const Blog = mongoose.model("Blog", blogsSchema);
 
+//initialize starting entries for Home, Contact, and About routes.
 const homeStartingContent = new Post ({
   title: "home",
   post: "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing."
@@ -43,7 +49,9 @@ const contactContent = new Post ({
 const defaultPosts = [homeStartingContent, aboutContent, contactContent];
 let posts2 = [];
 
+
 app.get("/", function(req, res) {
+  //we check if our DB has any existing posts, if not then insert boilerplate ones and serve up
   Post.find({}, function(err, results){
     if (results.length === 0) {
       Post.insertMany(defaultPosts, function(err){
@@ -55,10 +63,12 @@ app.get("/", function(req, res) {
       })
       res.render("home", {homeStartingContent: results.post, posts: posts2});
     } else {
+      //if the database does have data, then look for the Home post and serve that
       Post.findOne({title: "home"}, function(err, result){
         if (err) {
           console.log(err);
         } else {
+          //after the home post is found, we will look for all other blogposts in the db and present previews
           Blog.find({}, function(err, results){
             res.render("home", {homeStartingContent: result.post, posts: results});
           });
@@ -69,10 +79,15 @@ app.get("/", function(req, res) {
   })
 })
 
+//this get route is specific to requesting blog posts when clicked from the home page
 app.get("/posts/:_id", function(req, res) {
+  //when request is made we gather all posts
   Blog.find({}, function(err, results){
+    //then we iterate the results looking for the post id that corresponds to the one clicked
     results.forEach(function(element){
+      //if we find a match we shold be able to just serve that element with our post
       if (_.lowerCase(element._id) === _.lowerCase(req.params._id)) {
+        //I think this findOne is unnecessary, will come back to this
         Blog.findOne({_id: element._id}, function(err, result){
           if (err){
             console.log(err);
@@ -111,6 +126,7 @@ app.get("/compose", function(req, res) {
   res.render("compose");
 })
 
+//when user composes a new blog we create a new document and save it to the db
 app.post("/compose", function (req, res) {
   const newBlog = new Blog ({
     title: req.body.postTitle,
