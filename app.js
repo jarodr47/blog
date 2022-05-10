@@ -88,13 +88,14 @@ app.get("/posts/:_id", function(req, res) {
       //if we find a match we shold be able to just serve that element with our post
       if (_.lowerCase(element._id) === _.lowerCase(req.params._id)) {
         //I think this findOne is unnecessary, will come back to this
-        Blog.findOne({_id: element._id}, function(err, result){
-          if (err){
-            console.log(err);
-          } else {
-            res.render("post", {title: result.title, body: result.post});
-          }
-        })
+        res.render("post", {title: element.title, body: element.post});
+        // Blog.findOne({_id: element._id}, function(err, result){
+        //   if (err){
+        //     console.log(err);
+        //   } else {
+        //     res.render("post", {title: result.title, body: result.post});
+        //   }
+        // })
       }
     });
   })
@@ -132,8 +133,11 @@ app.post("/compose", function (req, res) {
     title: req.body.postTitle,
     post: req.body.postBody
   })
-  newBlog.save();
-  res.redirect("/");
+  newBlog.save(function(err){
+    if(!err){
+      res.redirect("/");
+    }
+  });
 })
 
 app.listen(3000, function() {
